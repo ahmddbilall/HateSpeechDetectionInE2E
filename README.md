@@ -1,11 +1,11 @@
 # chat_app
 
-A full Fledge Chat App built with Flutter and Firebase. It utilizes Provider for State Management and MVVM Architcture to organise code for scalability and testability.
+1. UI is cloned from :https://github.com/swkhan-dev/ChatApp_FlutterFirebase
+Thanks to him for sharing the code.
 
-Architecture: Views --> ViewModels --> Services
 
-## How to make it work
+2. For Hate Speech detection, `mobile bert` is used. 
+    - we first fined tuned the model on Roman Urdu using the dataset[https://www.kaggle.com/datasets/drkhurramshahzad/hate-speech-roman-urdu] from kaggle.
+    - Quantized the model to int8 to reduce the size 
+    - Encrypt the model to pretect it/making difficult to reverse engineer before sending it to client machine
 
-Create your own Firebase Project and connect chat app to it using FlutterFire Cli
-Or Do it manually
-Add GoogleServices.json for android in "android/app/" && Add GoogleService-Info.plist for ios in "ios/Runner/"
