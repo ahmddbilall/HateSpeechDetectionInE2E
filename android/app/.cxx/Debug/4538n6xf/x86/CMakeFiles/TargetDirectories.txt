@@ -1,0 +1,2 @@
+C:/Users/shame/Desktop/HateSpeechE2E/android/app/.cxx/Debug/4538n6xf/x86/CMakeFiles/edit_cache.dir
+C:/Users/shame/Desktop/HateSpeechE2E/android/app/.cxx/Debug/4538n6xf/x86/CMakeFiles/rebuild_cache.dir
