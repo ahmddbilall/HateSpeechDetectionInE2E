@@ -10,6 +10,8 @@ import 'package:chat_app/core/services/key_exchange_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../../utils/inference.dart';
+
 class ChatViewmodel extends BaseViewmodel {
   final ChatService _chatService;
   final UserModel _currentUser;
@@ -92,47 +94,61 @@ class ChatViewmodel extends BaseViewmodel {
       if (_messageController.text.isEmpty) {
         throw Exception("Please enter some text");
       }
-      final now = DateTime.now();
+      // check hate speech here
 
-      // Create a message object with plaintext content initially
-      final message = Message(
-          id: now.millisecondsSinceEpoch.toString(),
-          content: _messageController.text,
-          senderId: _currentUser.uid,
-          receiverId: _receiver.uid,
-          timestamp: now);
+      String result = await HateSpeechDetector.runHateSpeechDetection(_messageController.text);
 
-      // Ensure our public key is published
-      await _keyExchangeService.ensurePublicKeyIsPublished();
-      
-      // Get recipient's public key for encryption using the key exchange service
-      String? recipientPublicKey = await _keyExchangeService.getPublicKeyForUser(_receiver.uid!);
-      
-      // Log encryption status
-      if (recipientPublicKey != null) {
-        log("Sending encrypted message with recipient's public key");
-      } else {
-        log("Sending unencrypted message - recipient's public key not available");
+      if (result != 'Neutral'){
+        log('message cannot be sent as it contains hate speech');
+
       }
-      
-      // Send the message with encryption if possible
-      await _chatService.saveMessage(
-        message.toMap(), 
-        chatRoomId,
-        _receiver.uid!,
-        recipientPublicKey
-      );
+      else {
+        final now = DateTime.now();
 
-      // Update last message (this is shown in the chat list and isn't encrypted)
-      final lastMessagePrefix = recipientPublicKey != null ? " " : ""; // Add lock emoji to indicate encryption
-      _chatService.updateLastMessage(
-        _currentUser.uid!, 
-        _receiver.uid!,
-        "$lastMessagePrefix${_messageController.text}", 
-        now.millisecondsSinceEpoch
-      );
+        // Create a message object with plaintext content initially
+        final message = Message(
+            id: now.millisecondsSinceEpoch.toString(),
+            content: _messageController.text,
+            senderId: _currentUser.uid,
+            receiverId: _receiver.uid,
+            timestamp: now);
 
-      _messageController.clear();
+        // Ensure our public key is published
+        await _keyExchangeService.ensurePublicKeyIsPublished();
+
+        // Get recipient's public key for encryption using the key exchange service
+        String? recipientPublicKey = await _keyExchangeService
+            .getPublicKeyForUser(_receiver.uid!);
+
+        // Log encryption status
+        if (recipientPublicKey != null) {
+          log("Sending encrypted message with recipient's public key");
+        } else {
+          log(
+              "Sending unencrypted message - recipient's public key not available");
+        }
+
+        // Send the message with encryption if possible
+        await _chatService.saveMessage(
+            message.toMap(),
+            chatRoomId,
+            _receiver.uid!,
+            recipientPublicKey
+        );
+
+        // Update last message (this is shown in the chat list and isn't encrypted)
+        final lastMessagePrefix = recipientPublicKey != null
+            ? " "
+            : ""; // Add lock emoji to indicate encryption
+        _chatService.updateLastMessage(
+            _currentUser.uid!,
+            _receiver.uid!,
+            "$lastMessagePrefix${_messageController.text}",
+            now.millisecondsSinceEpoch
+        );
+
+        _messageController.clear();
+      }
     } catch (e) {
       log("Error sending message: $e");
       rethrow;
