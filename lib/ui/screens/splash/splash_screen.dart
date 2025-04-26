@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:developer';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:provider/provider.dart';
+
 import 'package:chat_app/core/constants/string.dart';
 import 'package:chat_app/core/services/model_service.dart';
 import 'package:chat_app/ui/screens/auth/login/login_screen.dart';
 import 'package:chat_app/ui/screens/bottom_navigation/bottom_navigation_screen.dart';
+import 'package:chat_app/ui/screens/other/user_provider.dart';
+import 'package:chat_app/utils/inference.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -27,33 +33,44 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
-      // Start loading the model in background
-      final modelFuture = ModelService().loadModel();
+      log('⚙️ Calling HateSpeechDetector.initModel...');
+      await HateSpeechDetector.initModel();
+      log('✅ Model loaded successfully');
 
-      // Show initial UI
       setState(() {
         _loadingText = 'Initializing...';
       });
 
-      // Wait for model to load
-      await modelFuture;
+      await ModelService().loadModel();
 
       if (!mounted) return;
 
-      // Check authentication
-      final user = FirebaseAuth.instance.currentUser;
+      log('⏳ Waiting for Firebase auth state...');
+      final user = await FirebaseAuth.instance.authStateChanges().first;
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => user != null
-                ? const BottomNavigationScreen()
-                : const LoginScreen(),
-          ),
-        );
+      if (!mounted) return;
+
+      if (user != null) {
+        log("✅ Firebase user detected: ${user.uid}");
+
+        // ✅ Ensure UserProvider loads Firestore user data
+        await Provider.of<UserProvider>(context, listen: false).loadUser(user.uid);
+        log("✅ UserProvider finished loading user");
+      } else {
+        log("🚪 No Firebase user detected");
       }
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              user != null ? const BottomNavigationScreen() : const LoginScreen(),
+        ),
+      );
     } catch (e) {
+      log('❌ SplashScreen failed: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -111,3 +128,6 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 }
+
+
+

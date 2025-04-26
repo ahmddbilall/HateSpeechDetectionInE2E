@@ -21,53 +21,54 @@ class ModelEncryption {
   }
 
   static Future<String> decryptModel() async {
-    try {
-      // Load encrypted model and IV from assets
-      final encryptedData = await rootBundle.load('assets/mobilebert_hate_speech_encrypted.bin');
-      final encryptedBytes = encryptedData.buffer.asUint8List();
-      final ivData = await rootBundle.load('assets/encryption_iv.bin');
-      final ivBytes = ivData.buffer.asUint8List();
+  try {
+    // ✅ Step 1: Check if already decrypted model exists
+    final appDir = await getApplicationDocumentsDirectory();
+    final cachedPath = '${appDir.path}/bert_cached_model.tflite';
+    final cachedFile = File(cachedPath);
 
-      // Verify IV length
-      if (ivBytes.length != 16) {
-        throw Exception('Invalid IV length: Expected 16 bytes, got ${ivBytes.length}');
-      }
-      log('IV Bytes: ${ivBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join()}');
-
-      // Get encryption key
-      final keyString = await getEncryptionKey();
-      if (keyString == null) throw Exception('Encryption key not found');
-      log('Key String: $keyString');
-
-      // Decode key (16 bytes for AES-128)
-      final keyBytes = base64Decode(keyString);
-      if (keyBytes.length != 16) {
-        throw Exception('Invalid key length: Expected 16 bytes, got ${keyBytes.length}');
-      }
-      log('AES Key Length: ${keyBytes.length} bytes');
-
-      // Decrypt
-      final key = Key(keyBytes);
-      final iv = IV(ivBytes);
-      final encrypter = Encrypter(AES(key, mode: AESMode.cbc));
-      final decrypted = encrypter.decryptBytes(Encrypted(encryptedBytes), iv: iv);
-      log('Decryption successful');
-
-      // Write decrypted model to temporary file
-      final tempDir = await getTemporaryDirectory();
-      final tempPath = '${tempDir.path}/mobilebert_hate_speech.tflite';
-      await File(tempPath).writeAsBytes(decrypted);
-      log('Model written to: $tempPath');
-
-      // Verify integrity with SHA-256
-      final hash = base64Encode(sha256.convert(decrypted).bytes);
-      const expectedHash = 'MIRIjNz4t64sJTNdFuULYaHl7rPsdneNTr67Ts1vwAM='; // Replace with new hash from Python
-      if (hash != expectedHash) throw Exception('Model integrity check failed');
-      log('SHA-256 hash verified');
-
-      return tempPath;
-    } catch (e) {
-      throw Exception('Decryption failed: $e');
+    if (await cachedFile.exists()) {
+      log('✅ Using cached decrypted model');
+      return cachedPath;
     }
+
+    log('🔐 No cached model found, decrypting...');
+
+    // Load encrypted model and IV from assets
+    final encryptedData = await rootBundle.load('assets/mobilebert_hate_speech_encrypted.bin');
+    final encryptedBytes = encryptedData.buffer.asUint8List();
+    final ivData = await rootBundle.load('assets/encryption_iv.bin');
+    final ivBytes = ivData.buffer.asUint8List();
+
+    if (ivBytes.length != 16) throw Exception('Invalid IV length');
+
+    final keyString = await getEncryptionKey();
+    if (keyString == null) throw Exception('Encryption key not found');
+
+    final keyBytes = base64Decode(keyString);
+    if (keyBytes.length != 16) throw Exception('Invalid key length');
+
+    // Decrypt
+    final key = Key(keyBytes);
+    final iv = IV(ivBytes);
+    final encrypter = Encrypter(AES(key, mode: AESMode.cbc));
+    final decrypted = encrypter.decryptBytes(Encrypted(encryptedBytes), iv: iv);
+    log('✅ Decryption successful');
+
+    // SHA-256 check (optional, can comment out if confident in encryption)
+    final hash = base64Encode(sha256.convert(decrypted).bytes);
+    const expectedHash = 'MIRIjNz4t64sJTNdFuULYaHl7rPsdneNTr67Ts1vwAM=';
+    if (hash != expectedHash) throw Exception('Model integrity check failed');
+    log('✅ SHA-256 hash verified');
+
+    // ✅ Step 2: Save decrypted model to permanent location
+    await cachedFile.writeAsBytes(decrypted);
+    log('📁 Model saved at: $cachedPath');
+
+    return cachedPath;
+  } catch (e) {
+    log('❌ Decryption failed: $e');
+    rethrow;
   }
+}
 }

@@ -19,27 +19,24 @@ class ModelService {
   int get maxSequenceLength => MAX_SEQUENCE_LENGTH;
 
   Future<void> loadModel() async {
-    if (_isModelLoaded) return;
+  if (_isModelLoaded) return;
 
-    try {
-      // Check if cached model exists
-      final cachedModel = File(_cachedModelPath);
-      if (await cachedModel.exists()) {
-        _interpreter = await Interpreter.fromFile(cachedModel);
-        _isModelLoaded = true;
-        return;
-      }
+  try {
+    //   use the decrypted model path
+    final modelPath = await ModelEncryption.decryptModel();
+    final modelFile = File(modelPath);
 
-      // If no cached model, decrypt and cache it in background
-      await _decryptAndCacheModel();
-
-      // Load the cached model
-      _interpreter = await Interpreter.fromFile(cachedModel);
-      _isModelLoaded = true;
-    } catch (e) {
-      throw Exception('Failed to load model: $e');
+    if (!await modelFile.exists()) {
+      throw Exception('Model file does not exist at $modelPath');
     }
+
+    _interpreter = await Interpreter.fromFile(modelFile);
+    _isModelLoaded = true;
+  } catch (e) {
+    throw Exception('Failed to load model: $e');
   }
+}
+
 
   Future<void> _decryptAndCacheModel() async {
     // Create a ReceivePort to receive the result from the isolate

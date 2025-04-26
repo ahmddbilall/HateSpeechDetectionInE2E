@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:chat_app/core/constants/colors.dart';
 import 'package:chat_app/core/constants/styles.dart';
 import 'package:chat_app/core/extension/widget_extension.dart';
@@ -18,6 +20,10 @@ class ChatScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentUser = Provider.of<UserProvider>(context).user;
+    log("👤 Current user is null? ${currentUser}");
+    log("👤 Sender: ${currentUser?.uid}"); // Make sure this is not null
+log("📨 Receiver: ${receiver.uid}"); // Must be valid too
+
     return ChangeNotifierProvider(
       create: (context) => ChatViewmodel(ChatService(), currentUser!, receiver),
       child: Consumer<ChatViewmodel>(builder: (context, model, _) {
@@ -53,16 +59,60 @@ class ChatScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              BottomField(
-                controller: model.controller,
-                onTap: () async {
-                  try {
-                    await model.saveMessage();
-                  } catch (e) {
-                    context.showSnackbar(e.toString());
-                  }
-                },
-              )
+              // ⬇️ BottomField with manual IconButton for Send
+              Container(
+                color: grey.withOpacity(0.2),
+                padding: EdgeInsets.symmetric(
+                    horizontal: 1.sw * 0.05, vertical: 25.h),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20.r,
+                      backgroundColor: white,
+                      child: const Icon(Icons.add),
+                    ),
+                    10.horizontalSpace,
+                    Expanded(
+                      child: TextField(
+                        controller: model.controller,
+                        decoration: InputDecoration(
+                          hintText: "Write message...",
+                          fillColor: white,
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(25.r),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding:
+                              EdgeInsets.symmetric(horizontal: 12.w),
+                        ),
+                      ),
+                    ),
+                    Consumer<ChatViewmodel>(
+  builder: (context, model, _) {
+    log("🧠 ChatViewmodel instance: $model");
+    log("👤 Current user uid: ${model.controller.text}");
+
+    return IconButton(
+      icon: const Icon(Icons.send, color: Colors.blue),
+      onPressed: () async {
+        log("💬 Send icon pressed from ChatScreen");
+        try {
+          await model.saveMessage();
+          log("📤 Message send attempted");
+        } catch (e) {
+          log("❌ Error sending: $e");
+          context.showSnackbar(e.toString());
+        }
+      },
+    );
+  },
+),
+
+
+                  ],
+                ),
+              ),
             ],
           ),
         );
@@ -100,3 +150,4 @@ class ChatScreen extends StatelessWidget {
     );
   }
 }
+

@@ -10,10 +10,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
+  print("🔥 MAIN: App is starting"); // ✅ Debug print
+  log("🔥 LOG: App is starting");   // ✅ Dart developer log
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  // just run bellow line once to remove unnecessary overwrite
+
+  // Only needed once, but harmless on every boot
   await ModelEncryption.saveEncryptionKey('HEbUCkJJtvk5Wtup0ITFPg==');
+
   runApp(const ChatApp());
 }
 
@@ -23,9 +27,12 @@ class ChatApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      builder: (context, child) => ChangeNotifierProvider(
-        create: (context) => UserProvider(DatabaseService()),
+      builder: (context, child) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => UserProvider(DatabaseService())),
+        ],
         child: const MaterialApp(
+          debugShowCheckedModeBanner: false,
           onGenerateRoute: RouteUtils.onGenerateRoute,
           home: SplashScreen(),
         ),

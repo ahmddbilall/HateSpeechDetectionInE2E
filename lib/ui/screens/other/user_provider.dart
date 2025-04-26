@@ -12,28 +12,39 @@ class UserProvider extends ChangeNotifier {
   UserProvider(this._db);
 
   UserModel? _currentUser;
+  bool _isLoading = true;
 
   UserModel? get user => _currentUser;
+  bool get isLoading => _isLoading;
 
-  loadUser(String uid) async {
+  Future<void> loadUser(String uid) async {
+    _isLoading = true;
+    notifyListeners();
+
     try {
       final userData = await _db.loadUser(uid);
 
       if (userData != null) {
         _currentUser = UserModel.fromMap(userData);
-        notifyListeners();
-        
+
         // Ensure the user's public key is published to the database
         await _keyExchangeService.ensurePublicKeyIsPublished();
-        log('User loaded and public key published');
+
+        log('✅ User loaded and public key published');
+      } else {
+        log('⚠️ No user data found in database');
       }
     } catch (e) {
-      log('Error loading user: $e');
+      log('❌ Error loading user: $e');
     }
+
+    _isLoading = false;
+    notifyListeners();
   }
 
-  clearUser() {
+  void clearUser() {
     _currentUser = null;
     notifyListeners();
   }
 }
+

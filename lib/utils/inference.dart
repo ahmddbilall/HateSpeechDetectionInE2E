@@ -13,7 +13,9 @@ class HateSpeechDetector {
     if (_isModelLoaded) return;
     try {
       String modelPath = await ModelEncryption.decryptModel();
-      File modelFile = File(modelPath); // Convert String path to File
+      print('📍 TFLite loading model from: $modelPath');
+      File modelFile = File(modelPath);
+
       if (!await modelFile.exists()) {
         throw Exception('Model file does not exist at $modelPath');
       }
@@ -21,46 +23,63 @@ class HateSpeechDetector {
       _interpreter!.allocateTensors();
       _isModelLoaded = true;
     } catch (e) {
-      throw Exception('Failed to load model: $e');
+      print('❌ Model loading failed: $e');
+      rethrow;
+
     }
   }
 
   static Future<String> runHateSpeechDetection(String text) async {
-    try {
-      await initModel();
-      final tokenizer = MobileBertTokenizer();
-      final inputs = await tokenizer.tokenize(text);
+  try {
+    await initModel();
+    final tokenizer = MobileBertTokenizer();
+    final inputs = await tokenizer.tokenize(text);
 
-      // Workaround: Use first token due to [1, 1] input shape
-      List<int> inputIds = [inputs['input_ids']![0]];
-      List<int> attentionMask = [inputs['attention_mask']![0]];
-      List<int> tokenTypeIds = [inputs['token_type_ids']![0]];
+    const int maxLen = 128;
 
-      // Prepare inputs (int32, shape [1, 1])
-      Int32List inputIdsInt32 = Int32List.fromList(inputIds);
-      Int32List attentionMaskInt32 = Int32List.fromList(attentionMask);
-      Int32List tokenTypeIdsInt32 = Int32List.fromList(tokenTypeIds);
+    // Extract and pad
+    List<int> inputIds = _padOrTruncate(inputs['input_ids']!, maxLen);
+    List<int> attentionMask = _padOrTruncate(inputs['attention_mask']!, maxLen);
+    List<int> tokenTypeIds = _padOrTruncate(inputs['token_type_ids']!, maxLen);
 
-      List<Int32List> inputTensors = [
-        inputIdsInt32,
-        attentionMaskInt32,
-        tokenTypeIdsInt32,
-      ];
+    // Shape [1, 128]
+    List<List<int>> inputTensor = [inputIds];
+    List<List<int>> attentionMaskTensor = [attentionMask];
+    List<List<int>> tokenTypeTensor = [tokenTypeIds];
 
-      // Prepare output tensor (int8, shape [1, 2])
-      var outputTensor = Int8List(2);
-      var outputTensors = {0: outputTensor};
+    //  Output tensor with correct shape: [1, 2]
+    List<List<double>> outputTensor = List.generate(1, (_) => List.filled(2, 0.0));
 
-      _interpreter!.runForMultipleInputs(inputTensors, outputTensors);
+    _interpreter!.runForMultipleInputs(
+      [inputTensor, attentionMaskTensor, tokenTypeTensor],
+      {0: outputTensor},
+    );
 
-      // Dequantize output (scale=13.029571, zero_point=-128)
-      List<double> logits =
-          outputTensor.map((i) => (i + 128) * 13.029571).toList();
-      return logits[0] > logits[1] ? 'Neutral' : 'Hostile';
-    } catch (e) {
-      throw Exception('Inference failed: $e');
-    }
+    // Flatten [1, 2] → [2]
+    List<double> raw = outputTensor[0];
+
+    // Dequantize
+    List<double> logits =
+        raw.map((i) => (i + 128) * 13.029571).toList();
+
+    return logits[0] > logits[1] ? 'Neutral' : 'Hostile';
+  } catch (e) {
+    throw Exception('Inference failed: $e');
   }
+}
+
+
+// Helper to pad or truncate to length 128
+static List<int> _padOrTruncate(List<int> input, int length) {
+  if (input.length > length) {
+    return input.sublist(0, length);
+  } else if (input.length < length) {
+    return input + List.filled(length - input.length, 0);
+  } else {
+    return input;
+  }
+}
+
 
   static void dispose() {
     _interpreter?.close();

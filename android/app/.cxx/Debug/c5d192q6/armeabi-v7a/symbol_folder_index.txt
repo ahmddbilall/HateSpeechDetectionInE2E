@@ -1,0 +1,1 @@
+C:\Users\bilal\Documents\HateSpeechDetectionInE2E\build\app\intermediates\cxx\Debug\c5d192q6\obj\armeabi-v7a

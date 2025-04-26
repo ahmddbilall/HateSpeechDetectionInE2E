@@ -28,19 +28,32 @@ class BottomField extends StatelessWidget {
             ),
           ),
           10.horizontalSpace,
+          // ✅ TEXTFIELD
           Expanded(
-              child: CustomTextfield(
-            controller: controller,
-            isChatText: true,
-            hintText: "Write message..",
-            onChanged: onChanged,
-            onTap: onTap,
-          ))
+            child: CustomTextfield(
+              controller: controller,
+              isChatText: true,
+              hintText: "Write message...",
+              onChanged: onChanged,
+            ),
+          ),
+          // ✅ SEND ICON
+          IconButton(
+          icon: const Icon(Icons.send, color: Colors.blue),
+          onPressed: () {
+            print("💬 Send icon pressed");
+            if (onTap != null) onTap!();
+          },
+        ),
         ],
       ),
     );
   }
 }
+
+
+
+
 
 class ChatBubble extends StatelessWidget {
   const ChatBubble(
