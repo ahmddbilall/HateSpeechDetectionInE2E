@@ -79,8 +79,9 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/
-    - assets/mobilebert_hate_speech_encrypted.bin
-    - assets/encryption_iv.bin
+#    - assets/model_encrypted.bin
+    - assets/model.tflite
+#    - assets/encryption_iv.bin
     - assets/tokenizer/vocab.txt
     - assets/tokenizer/tokenizer_config.json
     - assets/tokenizer/special_tokens_map.json

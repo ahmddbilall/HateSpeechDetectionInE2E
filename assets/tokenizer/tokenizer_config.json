@@ -46,11 +46,11 @@
   "do_lower_case": true,
   "extra_special_tokens": {},
   "mask_token": "[MASK]",
-  "model_max_length": 1000000000000000019884624838656,
+  "model_max_length": 512,
   "pad_token": "[PAD]",
   "sep_token": "[SEP]",
   "strip_accents": null,
   "tokenize_chinese_chars": true,
-  "tokenizer_class": "MobileBertTokenizer",
+  "tokenizer_class": "BertTokenizer",
   "unk_token": "[UNK]"
 }

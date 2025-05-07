@@ -98,7 +98,7 @@ log("📨 Receiver: ${receiver.uid}"); // Must be valid too
       onPressed: () async {
         log("💬 Send icon pressed from ChatScreen");
         try {
-          await model.saveMessage();
+          await model.saveMessage(context);
           log("📤 Message send attempted");
         } catch (e) {
           log("❌ Error sending: $e");

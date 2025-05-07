@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:chat_app/core/services/database_service.dart';
 import 'package:chat_app/core/utils/route_utils.dart';
 import 'package:chat_app/firebase_options.dart';
@@ -10,13 +12,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
-  print("🔥 MAIN: App is starting"); // ✅ Debug print
+  // print("🔥 MAIN: App is starting"); // ✅ Debug print
   log("🔥 LOG: App is starting");   // ✅ Dart developer log
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Only needed once, but harmless on every boot
-  await ModelEncryption.saveEncryptionKey('HEbUCkJJtvk5Wtup0ITFPg==');
+  await ModelEncryption.saveEncryptionKey('9Vu7P4qCcdjb745xMJxzgQ==');
 
   runApp(const ChatApp());
 }

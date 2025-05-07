@@ -83,11 +83,12 @@ class ChatViewmodel extends BaseViewmodel {
     log("💬 ChatRoom ID set: $chatRoomId");
   }
 
-  saveMessage() async {
+  saveMessage(BuildContext context) async {
     log("📤 saveMessage called");
 
     try {
       final text = _messageController.text.trim();
+      _messageController.clear();
       log("🟢 User input: '$text'");
 
       if (text.isEmpty) {
@@ -96,13 +97,20 @@ class ChatViewmodel extends BaseViewmodel {
       }
 
       log("🧠 Running hate speech detection...");
-      String result = await HateSpeechDetector.runHateSpeechDetection(text);
+      final result = await HateSpeechDetector.runHateSpeechDetection(text);
       log("🧠 Detection result: $result");
 
-      if (result != 'Neutral') {
+      if (result['result'] != 'Neutral') {
         log("🚫 Hate speech detected — message blocked");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Message can't be sent due to hate speech detection."),
+            backgroundColor: Colors.red,
+          ),
+        );
         return;
       }
+
 
       final now = DateTime.now();
       final message = Message(

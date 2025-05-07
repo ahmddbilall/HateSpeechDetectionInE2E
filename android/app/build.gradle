@@ -32,6 +32,14 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = [
+                    "room.incremental"     : "true",
+                    "room.expandProjection": "true"
+                ]
+            }
+        }
     }
 
     buildTypes {
@@ -40,6 +48,10 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.debug
         }
+    }
+
+    dexOptions {
+        javaMaxHeapSize "4g"
     }
 }
 
